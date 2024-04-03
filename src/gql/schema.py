@@ -1,9 +1,9 @@
 import strawberry
-from .stockQuery import StockQuery
+from src.gql.stock_query import StockQuery
 
 @strawberry.type
 class Query(StockQuery):
-    pass
+    '''Extended query inheriting/extending other subqueries'''
 
 # @strawberry.type
 # class Mutation():

@@ -1,17 +1,13 @@
-import requests
 import os
-from datetime import datetime, timedelta
-import random
-import json
+import requests
 
 POLYGON_IO_API_KEY = os.environ.get("POLYGON_IO_API_KEY")
 
-def getMinuteData(ticker: str, startDay: str, endDay: str, limit: int):
-    url = f'https://api.polygon.io/v2/aggs/ticker/{ticker}/range/1/minute/{startDay}/{endDay}?adjusted=true&sort=desc&limit={limit}&apiKey={POLYGON_IO_API_KEY}'
-    response = requests.get(url)
-    data = response.json()
+def get_minute_data(symbol: str, start_date: str, end_date: str, limit: int):
+    '''Function to request market data from polygon api'''
+    url = f'https://api.polygon.io/v2/aggs/ticker/{symbol}/range/1/minute/{start_date}/{end_date}?adjusted=true&sort=desc&limit={limit}&apiKey={POLYGON_IO_API_KEY}'
+    response = requests.get(url, timeout=5)
 
-    # with open('src/http/mocks/IntradayMinuteAgg.json', 'w') as f:
-    #     json.dump(data, f)
+    data = response.json()
 
     return data
