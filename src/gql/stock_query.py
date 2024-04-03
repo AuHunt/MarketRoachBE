@@ -21,13 +21,8 @@ class Minute:
 class StockQuery:
     @strawberry.field
     async def get_minutes(self, symbol: str, start: str, end: str) -> List[Minute]:
-        data = await get_intraday_logs(symbol, int(start), int(end))
+        data = await get_intraday_logs(symbol, start, end)
 
-        minutes = [
-            Minute(
-                **{key: str(value) if key in ['time', 'fetchTime'] else value for key, value in log.items()}
-            ) 
-            for log in data
-        ]
+        minutes = [Minute(**item) for item in data]
 
         return minutes

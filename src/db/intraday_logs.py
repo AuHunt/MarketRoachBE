@@ -10,6 +10,7 @@ Module handling all intradayLogs collection operations
 import textwrap
 import os
 import asyncio
+import json
 from datetime import datetime, timedelta, timezone, time
 from src.http.intraday import get_minute_data
 from src.db.mongo_client import MongoClient
@@ -42,53 +43,46 @@ async def fetch_intraday_data(symbol: str):
                             'close': minute['c'],
                             'highest': minute['h'],
                             'lowest': minute['l'],
-                            'time': minute['t'],
-                            'fetchTime': unix_time,
+                            'time': str(minute['t']),
+                            'fetchTime': str(unix_time),
                             'number': minute['n'],
                             'volume': minute['v'],
                             'vwAveragePrice': minute['vw'],
-                            'options': textwrap.dedent(f'''{{ 
-                                "requestId": {minute_data['request_id']},
-                                "adjusted": {minute_data['adjusted']},
-                                "status": {minute_data['status']},
-                                "is_market_closed": {is_market_closed} }}
-                            '''),
+                            'options': json.dumps({ 
+                                "requestId": minute_data['request_id'],
+                                "adjusted": minute_data['adjusted'],
+                                "status": minute_data['status'],
+                                "is_market_closed": is_market_closed
+                            }),
                             'details': ''
                         })
-
-                    await insert_intraday_logs(logs)
-
-                    print(textwrap.dedent(f'''
-                        {symbol}: {today}
-                        Status: {minute_data['status']}
-                        Total Results: {total_results}
-                        Request Id: {minute_data['request_id']}
-                    '''))
                 else:
-                    await insert_intraday_logs([{
+                    logs.append({
                         'symbol': symbol,
                         'open': 0.0,
                         'close': 0.0,
                         'highest': 0.0,
                         'lowest': 0.0,
-                        'time': 0,
-                        'fetchTime': unix_time,
+                        'time': str(0),
+                        'fetchTime': str(unix_time),
                         'number': 0,
                         'volume': 0,
                         'vwAveragePrice': 0.0,
-                        'options': textwrap.dedent(f'''{{ 
-                            "requestId": {minute_data['request_id']},
-                            "status": {minute_data['status']},
-                            "is_market_closed": {is_market_closed} }}
-                        '''),
+                        'options': json.dumps({
+                            "requestId": minute_data['request_id'],
+                            "status": minute_data['status'],
+                            "is_market_closed": is_market_closed
+                        }),
                         'details': f'{{ "response": {minute_data} }}'
-                    }])
+                    })
 
-                    print(textwrap.dedent(f'''
-                        {symbol}: {today}
-                        Status: {minute_data['status']}
-                        Request Id: {minute_data['request_id']}
-                    '''))
+                await insert_intraday_logs(logs)
+
+                print(textwrap.dedent(f'''
+                    {symbol}: {today}
+                    Status: {minute_data['status']}
+                    Request Id: {minute_data['request_id']}
+                '''))
 
                 await sleep_manager(is_market_closed)
         except Exception as e:
@@ -101,14 +95,26 @@ async def insert_intraday_logs(logs):
     result = await intraday_logs.insert_many(logs)
     print(result)
 
-async def get_intraday_logs(symbol: str, start: int, end: int):
+async def get_intraday_logs(symbol: str, start: str, end: str):
     '''Function that retrieves intraday data within specified range for symbol'''
     if IS_MOCKED.lower() == "true":
         await asyncio.sleep(0.5)
         return get_mocked_intraday_logs(symbol, start, end)
     else:
         intraday_logs = MongoClient.getCollection('intradayLogs')
-        return intraday_logs.find({ 'time': { '$gte': start, '$lte': end }})
+        skip = 0
+        batch_size = 125
+        logs = []
+
+        while True:
+            cursor = intraday_logs.find({ 'time': { '$gte': start, '$lte': end }}, { '_id': 0 }).skip(skip).limit(batch_size)
+            log_batch = await cursor.to_list(length=batch_size)
+            if not log_batch:
+                break
+            logs.extend(log_batch)
+            skip += batch_size
+        
+        return logs
 
 def get_mocked_intraday_logs(symbol: str, start: int, end: int):
     '''Function that returns mock intraday log values to avoid using mongodb while testing'''
