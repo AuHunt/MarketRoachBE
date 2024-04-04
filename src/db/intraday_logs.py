@@ -107,10 +107,20 @@ async def get_intraday_logs(symbol: str, start: str, end: str):
         logs = []
 
         while True:
-            cursor = intraday_logs.find({ 'time': { '$gte': start, '$lte': end }}, { '_id': 0 }).skip(skip).limit(batch_size)
+            pipeline = [
+                { '$match': { 'time': {'$gte': start, '$lte': end} } },
+                { '$project': { '_id': 0 } }, 
+                { '$sort': { 'time': -1 } },
+                { '$skip': skip },
+                { '$limit': batch_size }
+            ]
+
+            cursor = intraday_logs.aggregate(pipeline)
             log_batch = await cursor.to_list(length=batch_size)
+
             if not log_batch:
                 break
+
             logs.extend(log_batch)
             skip += batch_size
         
