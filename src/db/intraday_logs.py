@@ -47,7 +47,7 @@ async def fetch_intraday_data(symbol: str):
                             'fetchTime': str(unix_time),
                             'number': minute['n'],
                             'volume': minute['v'],
-                            'vwAveragePrice': minute['vw'],
+                            'vwap': minute['vw'],
                             'options': json.dumps({ 
                                 "requestId": minute_data['request_id'],
                                 "adjusted": minute_data['adjusted'],
@@ -67,7 +67,7 @@ async def fetch_intraday_data(symbol: str):
                         'fetchTime': str(unix_time),
                         'number': 0,
                         'volume': 0,
-                        'vwAveragePrice': 0.0,
+                        'vwap': 0.0,
                         'options': json.dumps({
                             "requestId": minute_data['request_id'],
                             "status": minute_data['status'],
@@ -139,7 +139,7 @@ def get_mocked_intraday_logs(symbol: str, start: int, end: int):
         'fetchTime': end,
         'number': 10,
         'volume': 100,
-        'vwAveragePrice': 1.5,
+        'vwap': 1.5,
         'options': textwrap.dedent(f'''{{ 
             "requestId": 28719c5e0f9221512d8aafe643889753,
             "adjusted": {True},

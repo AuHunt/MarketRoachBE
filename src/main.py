@@ -29,7 +29,7 @@ async def startup_event():
     try:
         await MongoClient.connectToMongoDb(
             f'mongodb://{MONGO_USER}:{MONGO_PWD}@localhost:27017/marketRoach')
-        asyncio.create_task(fetch_intraday_data("SPY"))
+        asyncio.create_task(fetch_intraday_data('SPY'))
         print("Connected to the database successfully.")
     except Exception as e:
         print(f"An error occurred while connecting to the database: {e}")

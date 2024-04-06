@@ -10,7 +10,7 @@ class Minute:
     highest: float
     lowest: float
     volume: float
-    vwAveragePrice: float
+    vwap: float
     time: str
     fetchTime: str
     number: int
