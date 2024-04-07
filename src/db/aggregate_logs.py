@@ -1,8 +1,8 @@
 '''
-Module handling all intradayLogs collection operations
+Module handling all aggregateLogs collection operations
 - Background task fetching of market data for insertion
-- Intraday Logs insertion
-- Intraday Logs retrieval
+- Aggregate Logs insertion
+- Aggregate Logs retrieval
 - Mocked logs retrieval
 - Sleep function for background task
 '''
@@ -12,14 +12,14 @@ import os
 import asyncio
 import json
 from datetime import datetime, timedelta, timezone, time
-from src.http.intraday import get_minute_data
+from src.http.aggregates import get_bar_aggregates, BarAggregatesParams
 from src.db.mongo_client import MongoClient
 
 IS_MOCKED = os.environ.get('IS_MOCKED', 'false')
 REQUEST_INTERVAL = 30
 
-async def fetch_intraday_data(symbol: str):
-    '''Function that uses polygon api to retrieve intraday market data'''
+async def fetch_aggregate_data(symbol: str, interval: str):
+    '''Function that uses polygon api to retrieve aggregate market data'''
     while True:
         try:
             today = datetime.now(timezone.utc)
@@ -30,7 +30,17 @@ async def fetch_intraday_data(symbol: str):
             is_market_closed = afterhours_close <= today.time() <= premarket_open
 
             if today.weekday() < 5:
-                minute_data = get_minute_data(symbol, yesterday.strftime('%Y-%m-%d'), today.strftime('%Y-%m-%d'), 15 if not is_market_closed else 960)
+                minute_data = get_bar_aggregates(
+                    BarAggregatesParams(
+                        symbol=symbol,
+                        window=1,
+                        interval=interval,
+                        start_date=yesterday.strftime('%Y-%m-%d'),
+                        end_date=today.strftime('%Y-%m-%d'),
+                        order='desc',
+                        limit=(15 if not is_market_closed else 960)
+                    )
+                )
                 unix_time = int(today.timestamp() * 1000)
                 logs = []
 
@@ -39,6 +49,7 @@ async def fetch_intraday_data(symbol: str):
                     for minute in minute_data['results']:
                         logs.append({
                             'symbol': symbol,
+                            'interval': interval,
                             'open': minute['o'],
                             'close': minute['c'],
                             'highest': minute['h'],
@@ -52,6 +63,7 @@ async def fetch_intraday_data(symbol: str):
                                 "requestId": minute_data['request_id'],
                                 "adjusted": minute_data['adjusted'],
                                 "status": minute_data['status'],
+                                "total_results": total_results,
                                 "is_market_closed": is_market_closed
                             }),
                             'details': ''
@@ -59,6 +71,7 @@ async def fetch_intraday_data(symbol: str):
                 else:
                     logs.append({
                         'symbol': symbol,
+                        'interval': interval,
                         'open': 0.0,
                         'close': 0.0,
                         'highest': 0.0,
@@ -76,7 +89,7 @@ async def fetch_intraday_data(symbol: str):
                         'details': f'{{ "response": {minute_data} }}'
                     })
 
-                await insert_intraday_logs(logs)
+                await insert_aggregate_logs(logs)
 
                 print(textwrap.dedent(f'''
                     {symbol}: {today}
@@ -86,36 +99,38 @@ async def fetch_intraday_data(symbol: str):
 
                 await sleep_manager(is_market_closed)
         except Exception as e:
-            print(f'An error occurred in db/intraday_logs.py: {e}')
+            print(f'An error occurred in db/aggregate_logs.py: {e}')
             await sleep_manager(is_market_closed)
 
-async def insert_intraday_logs(logs):
-    '''Function that adds logs to intradayLogs collection in MongoDB'''
-    intraday_logs = MongoClient.getCollection('intradayLogs')
-    result = await intraday_logs.insert_many(logs)
+async def insert_aggregate_logs(logs):
+    '''Function that adds logs to aggregateLogs collection in MongoDB'''
+    aggregate_logs = MongoClient.get_collection('aggregateLogs')
+    result = await aggregate_logs.insert_many(logs)
     print(result)
 
-async def get_intraday_logs(symbol: str, start: str, end: str):
-    '''Function that retrieves intraday data within specified range for symbol'''
+async def get_aggregate_logs(symbol: str, start: str, end: str, interval: str):
+    '''Function that retrieves aggregate data within specified range for symbol'''
     if IS_MOCKED.lower() == "true":
         await asyncio.sleep(0.5)
-        return get_mocked_intraday_logs(symbol, start, end)
+        return get_mocked_aggregate_logs(symbol, start, end)
     else:
-        intraday_logs = MongoClient.getCollection('intradayLogs')
+        aggregate_logs = MongoClient.get_collection('aggregateLogs')
         skip = 0
         batch_size = 125
         logs = []
 
+        print(interval)
+
         while True:
             pipeline = [
                 { '$match': { 'time': {'$gte': start, '$lte': end} } },
-                { '$project': { '_id': 0 } }, 
+                { '$project': { '_id': 0 } },
                 { '$sort': { 'time': -1 } },
                 { '$skip': skip },
                 { '$limit': batch_size }
             ]
 
-            cursor = intraday_logs.aggregate(pipeline)
+            cursor = aggregate_logs.aggregate(pipeline)
             log_batch = await cursor.to_list(length=batch_size)
 
             if not log_batch:
@@ -123,11 +138,11 @@ async def get_intraday_logs(symbol: str, start: str, end: str):
 
             logs.extend(log_batch)
             skip += batch_size
-        
+
         return logs
 
-def get_mocked_intraday_logs(symbol: str, start: int, end: int):
-    '''Function that returns mock intraday log values to avoid using mongodb while testing'''
+def get_mocked_aggregate_logs(symbol: str, start: int, end: int):
+    '''Function that returns mock aggregate log values to avoid using mongodb while testing'''
     print(f'test {symbol} {start} {end}')
     return [{
         'symbol': symbol,
