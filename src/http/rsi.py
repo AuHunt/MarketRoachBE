@@ -23,7 +23,7 @@ class RsiIndicatorParams:
     symbol: str
     date: str
     interval: str
-    window: str
+    window: int
     order: str
     limit: int
 

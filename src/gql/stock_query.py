@@ -2,9 +2,12 @@
 Module that defines query fields for stock information for GQL schema
 '''
 
+import os
 from typing import List
 import strawberry
 from src.db.aggregate_logs import get_aggregate_logs
+
+IS_MOCKED = os.environ.get('IS_MOCKED', 'false')
 
 @strawberry.type
 class MarketData:
@@ -30,18 +33,19 @@ class MarketData:
         details - Relevant information about datapoint
     '''
     symbol: str
+    interval: str
     open: float
     close: float
     highest: float
     lowest: float
     volume: float
     vwap: float
-    rsi6: float
+    # rsi6: float
     rsi14: float
-    rsi24: float
+    # rsi24: float
     sma5: float
-    sma100: float
-    sma200: float
+    # sma100: float
+    # sma200: float
     time: str
     fetchTime: str
     number: int
@@ -61,7 +65,7 @@ class StockQuery:
         Query field for market data
         Resolver retrieves data from MongoDb query
         '''
-        data = await get_aggregate_logs(symbol, start, end, interval)
+        data = await get_aggregate_logs(symbol, start, end, interval, IS_MOCKED)
 
         market_data = [MarketData(**item) for item in data]
 

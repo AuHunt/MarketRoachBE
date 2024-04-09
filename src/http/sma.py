@@ -10,7 +10,7 @@ import requests
 POLYGON_IO_API_KEY = os.environ.get("POLYGON_IO_API_KEY")
 
 @dataclass
-class RsiIndicatorParams:
+class SmaIndicatorParams:
     '''
     get_sma_data parameters:
         symbol - ticker symbol
@@ -27,7 +27,7 @@ class RsiIndicatorParams:
     order: str
     limit: int
 
-def get_sma_data(params: RsiIndicatorParams):
+def get_sma_data(params: SmaIndicatorParams):
     '''Function to request simple moving average (SMA) data from polygon api'''
     url = textwrap.dedent(f'''
         https://api.polygon.io/v1/indicators/sma/{params.symbol}?timestamp={params.date}&timespan={params.interval}&window={params.window}
