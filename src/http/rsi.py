@@ -5,7 +5,7 @@ Module that handles the polygon.io API requests for relative strength index (RSI
 import os
 import textwrap
 from dataclasses import dataclass
-import requests
+import aiohttp
 
 POLYGON_IO_API_KEY = os.environ.get("POLYGON_IO_API_KEY")
 
@@ -27,14 +27,15 @@ class RsiIndicatorParams:
     order: str
     limit: int
 
-def get_rsi_data(params: RsiIndicatorParams):
+async def get_rsi_data(params: RsiIndicatorParams):
     '''Function to request relative strength index (RSI) data from polygon api'''
     url = textwrap.dedent(f'''
         https://api.polygon.io/v1/indicators/rsi/{params.symbol}?timestamp={params.date}&timespan={params.interval}&window={params.window}&series_type=close
         &order={params.order}&limit={params.limit}&apiKey={POLYGON_IO_API_KEY}
-    ''')
-    response = requests.get(url, timeout=5)
+    ''').replace('\n', '')
 
-    data = response.json()
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url, timeout=5) as response:
+            data = await response.json()
 
     return data

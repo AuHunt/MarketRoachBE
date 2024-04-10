@@ -15,6 +15,18 @@ async def insert_aggregate_logs(logs):
     result = await aggregate_logs.insert_many(logs)
     print(result)
 
+async def bulk_upsert(collection, items):
+    '''Function for mass-inserting/editing aggregation logs'''
+    aggregate_logs = MongoClient.get_collection('aggregateLogs')
+    operations = []
+    for item in items:
+        query = {"time": item["time"]}
+        update = {"$set": item}
+        operations.append(aggregate_logs.update_one(query, update, upsert=True))
+
+    result = await collection.bulk_write(operations)
+    print(result)
+
 async def get_aggregate_logs(symbol: str, start: str, end: str, interval: str, is_mocked: bool):
     '''Function that retrieves aggregate data within specified range for symbol'''
     if is_mocked:

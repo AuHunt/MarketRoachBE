@@ -19,7 +19,8 @@ async def process_aggregate_data(
     '''Function that uses polygon api to retrieve aggregate market data'''
     while True:
         try:
-            today = datetime.now(timezone.utc)
+            # TODO++: Remove " - timedelta(days=2)" once you have full API access
+            today = datetime.now(timezone.utc) - timedelta(days=2)
             today_unix_time = int(today.timestamp() * 1000)
             afterhours_close = time(0, 0, 0)
             premarket_open = time(8, 0, 0)
@@ -46,30 +47,36 @@ async def process_aggregate_data(
                             'time': str(minute['t']),
                             'fetchTime': str(today_unix_time),
                             'number': minute['n'],
-                            'options': json.dumps({ 
-                                "requestId": minute['request_id'],
-                                "adjusted": minute['adjusted'],
-                                "status": minute['status'],
+                            'options': json.dumps({
+                                "requestId": minute_aggs['request_id'],
+                                "adjusted": minute_aggs['adjusted'],
+                                "status": minute_aggs['status'],
                             }),
                             'details': ''
                         }
                 else:
                     # TODO++: INSERT ERROR TO ERROR COLLECTION IN MONGODB
                     print('TBD')
-                if 'values' in minute_rsi:
-                    for minute in minute_rsi['values']:
-                        results_per_time[minute['timestamp']]['rsi14'] = minute['value']
-                else:
-                    # TODO++: INSERT ERROR TO ERROR COLLECTION IN MONGODB
-                    print('TBD')
-                if 'values' in minute_sma:
-                    for minute in minute_sma['values']:
-                        results_per_time[minute['timestamp']]['sma5'] = minute['value']
+
+                if 'results' in minute_rsi and 'values' in minute_rsi['results']:
+                    print(results_per_time)
+                    print('---')
+                    for minute in minute_rsi['results']['values']:
+                        results_per_time[minute['timestamp']]['rsi14'] = round(minute['value'], 3)
+                    print(results_per_time)
                 else:
                     # TODO++: INSERT ERROR TO ERROR COLLECTION IN MONGODB
                     print('TBD')
 
-                await insert_aggregate_logs(results_per_time.values())
+                if 'results' in minute_sma and 'values' in minute_sma['results']:
+                    for minute in minute_sma['results']['values']:
+                        print(minute)
+                        results_per_time[minute['timestamp']]['sma5'] = round(minute['value'], 3)
+                else:
+                    # TODO++: INSERT ERROR TO ERROR COLLECTION IN MONGODB
+                    print('TBD')
+
+                # await insert_aggregate_logs(results_per_time.values())
 
                 print(textwrap.dedent(f'''
                     {symbol} - {today}
@@ -131,5 +138,7 @@ async def fetch_market_data(symbol: str, today: datetime, interval: str, batch_s
             )
         ),
     )
+
+    print(results)
 
     return results

@@ -5,7 +5,7 @@ Module that handles polygon.io API requests for market data
 import os
 import textwrap
 from dataclasses import dataclass
-import requests
+import aiohttp
 
 POLYGON_IO_API_KEY = os.environ.get("POLYGON_IO_API_KEY")
 
@@ -29,16 +29,17 @@ class BarAggregatesParams:
     order: str
     limit: int
 
-def get_bar_aggregates(params: BarAggregatesParams):
+async def get_bar_aggregates(params: BarAggregatesParams):
     '''
     Poligon.io request to retrieve market data as bar aggregates (candlebars)
     '''
     url = textwrap.dedent(f'''
         https://api.polygon.io/v2/aggs/ticker/{params.symbol}/range/{params.window}/{params.interval}/{params.start_date}/
         {params.end_date}?sort={params.order}&limit={params.limit}&apiKey={POLYGON_IO_API_KEY}
-    ''')
-    response = requests.get(url, timeout=5)
+    ''').replace('\n', '')
 
-    data = response.json()
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url, timeout=5) as response:
+            data = await response.json()
 
     return data
