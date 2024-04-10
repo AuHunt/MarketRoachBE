@@ -7,6 +7,7 @@ Module handling all aggregateLogs collection operations
 
 import asyncio
 import json
+from pymongo import UpdateOne
 from src.db.mongo_client import MongoClient
 
 async def insert_aggregate_logs(logs):
@@ -15,16 +16,16 @@ async def insert_aggregate_logs(logs):
     result = await aggregate_logs.insert_many(logs)
     print(result)
 
-async def bulk_upsert(collection, items):
+async def upsert_aggregate_logs(logs):
     '''Function for mass-inserting/editing aggregation logs'''
     aggregate_logs = MongoClient.get_collection('aggregateLogs')
     operations = []
-    for item in items:
+    for item in logs:
         query = {"time": item["time"]}
         update = {"$set": item}
-        operations.append(aggregate_logs.update_one(query, update, upsert=True))
+        operations.append(UpdateOne(query, update, upsert=True))
 
-    result = await collection.bulk_write(operations)
+    result = await aggregate_logs.bulk_write(operations)
     print(result)
 
 async def get_aggregate_logs(symbol: str, start: str, end: str, interval: str, is_mocked: bool):
