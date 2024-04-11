@@ -30,7 +30,7 @@ async def upsert_aggregate_logs(logs):
 
 async def get_aggregate_logs(symbol: str, start: str, end: str, interval: str, is_mocked: bool):
     '''Function that retrieves aggregate data within specified range for symbol'''
-    if is_mocked:
+    if is_mocked is True:
         await asyncio.sleep(0.5)
         return get_mocked_aggregate_logs(symbol, start, end)
     else:
@@ -39,11 +39,14 @@ async def get_aggregate_logs(symbol: str, start: str, end: str, interval: str, i
         batch_size = 125
         logs = []
 
-        print(interval)
-
         while True:
             pipeline = [
-                { '$match': { 'time': {'$gte': start, '$lte': end} } },
+                {
+                    '$match': { 
+                        'time': {'$gte': start, '$lte': end}, 
+                        'interval': { '$eq': interval } 
+                    }
+                },
                 { '$project': { '_id': 0 } },
                 { '$sort': { 'time': -1 } },
                 { '$skip': skip },

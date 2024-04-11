@@ -3,7 +3,7 @@ Module that defines query fields for stock information for GQL schema
 '''
 
 import os
-from typing import List
+from typing import List, Optional
 import strawberry
 from src.db.aggregate_logs import get_aggregate_logs
 
@@ -34,21 +34,21 @@ class MarketData:
     '''
     symbol: str
     interval: str
-    open: float
-    close: float
-    highest: float
-    lowest: float
-    volume: float
-    vwap: float
-    # rsi6: float
-    rsi14: float
-    # rsi24: float
-    sma5: float
-    # sma100: float
-    # sma200: float
+    open: Optional[float] = None
+    close: Optional[float] = None
+    highest: Optional[float] = None
+    lowest: Optional[float] = None
+    volume: Optional[float] = None
+    vwap: Optional[float] = None
+    # rsi6: Optional[float] = None
+    rsi14: Optional[float] = None
+    # rsi24: Optional[float] = None
+    sma5: Optional[float] = None
+    # sma100: Optional[float] = None
+    # sma200: Optional[float] = None
     time: str
     fetchTime: str
-    number: int
+    number: Optional[int] = None
     options: str
     details: str
 

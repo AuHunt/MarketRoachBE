@@ -8,11 +8,13 @@ import json
 import asyncio
 import textwrap
 from datetime import datetime, timedelta, timezone, time
+from src.db.errors import insert_error
 from src.db.aggregate_logs import upsert_aggregate_logs
 from src.http.aggregates import get_bar_aggregates, BarAggregatesParams
 from src.http.rsi import get_rsi_data, RsiIndicatorParams
 from src.http.sma import get_sma_data, SmaIndicatorParams
 
+# TODO++: Break down the parsing to smaller functions
 async def process_aggregate_data(
     symbol: str, interval: str, batch_size: int, request_interval: int
 ):
@@ -49,7 +51,7 @@ async def process_aggregate_data(
                             'fetchTime': str(today_unix_time),
                             'number': minute['n'],
                             'options': json.dumps({
-                                # TODO++: figure out how to have other requests add their options here
+                # TODO++: figure out how to have other requests add their options here
                                 # "requestId": minute_aggs['request_id'],
                                 # "adjusted": minute_aggs['adjusted'],
                                 # "status": minute_aggs['status'],
@@ -57,8 +59,13 @@ async def process_aggregate_data(
                             'details': ''
                         }
                 else:
-                    # TODO++: INSERT ERROR TO ERROR COLLECTION IN MONGODB
-                    print('TBD')
+                    error_time = int((datetime.now(timezone.utc)).timestamp() * 1000)
+                    await insert_error({
+                        'time': str(error_time),
+                        'description': 'Error processing minute aggregate data',
+                        'source': 'src/processes/minute_data.py - process_aggregate_data',
+                        'details': json.dumps(minute_aggs)
+                    })
 
                 if 'results' in minute_rsi and 'values' in minute_rsi['results']:
                     for minute in minute_rsi['results']['values']:
@@ -71,31 +78,54 @@ async def process_aggregate_data(
                                 'interval': interval,
                                 'time': str(minute['timestamp']),
                                 'fetchTime': str(today_unix_time),
-                                'rsi14': rsi14
+                                'rsi14': rsi14,
+                                'options': json.dumps({
+                # TODO++: figure out how to have other requests add their options here
+                                # "requestId": minute_aggs['request_id'],
+                                # "adjusted": minute_aggs['adjusted'],
+                                # "status": minute_aggs['status'],
+                                }),
+                                'details': ''
                             }
                 else:
-                    # TODO++: INSERT ERROR TO ERROR COLLECTION IN MONGODB
-                    print('TBD')
+                    error_time = int((datetime.now(timezone.utc)).timestamp() * 1000)
+                    await insert_error({
+                        'time': str(error_time),
+                        'description': 'Error processing minute rsi14 data',
+                        'source': 'src/processes/minute_data.py - process_aggregate_data',
+                        'details': json.dumps(minute_rsi)
+                    })
 
                 if 'results' in minute_sma and 'values' in minute_sma['results']:
                     for minute in minute_sma['results']['values']:
-                        results_per_time[minute['timestamp']]['sma5'] = round(minute['value'], precision)
+                        sma5 = round(minute['value'], precision)
+                        results_per_time[minute['timestamp']]['sma5'] = sma5
                 else:
-                    # TODO++: INSERT ERROR TO ERROR COLLECTION IN MONGODB
-                    print('TBD')
+                    error_time = int((datetime.now(timezone.utc)).timestamp() * 1000)
+                    await insert_error({
+                        'time': str(error_time),
+                        'description': 'Error processing minute sma data',
+                        'source': 'src/processes/minute_data.py - process_aggregate_data',
+                        'details': json.dumps(minute_sma)
+                    })
 
                 await upsert_aggregate_logs(results_per_time.values())
 
                 print(textwrap.dedent(f'''
                     {symbol} - {today}
-                    Status: {minute_aggs['status']}
-                    Request Id: {minute_aggs['request_id']}
+                    Task complete - market data uploaded
                 '''))
 
                 await sleep_manager(is_market_closed, request_interval)
         except Exception as e:
             print(f'An error occurred in db/aggregate_logs.py: {e}')
-            # TODO++: INSERT ERROR TO ERROR COLLECTION IN MONGODB
+            error_time = int((datetime.now(timezone.utc)).timestamp() * 1000)
+            await insert_error({
+                'time': str(error_time),
+                'description': 'Error processing minute market data',
+                'source': 'src/processes/minute_data.py - process_aggregate_data',
+                'details': str(e)
+            })
             await sleep_manager(is_market_closed, request_interval)
 
 async def sleep_manager(is_market_closed: bool, request_interval: int):

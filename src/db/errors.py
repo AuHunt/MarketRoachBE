@@ -10,3 +10,9 @@ async def insert_errors(errors):
     errors_collection = MongoClient.get_collection('errors')
     result = await errors_collection.insert_many(errors)
     print(result)
+
+async def insert_error(error):
+    '''Function that adds error to errors collection in MongoDB'''
+    errors_collection = MongoClient.get_collection('errors')
+    result = await errors_collection.insert_one(error)
+    print(result)
