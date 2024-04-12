@@ -13,7 +13,7 @@ load_dotenv()
 from fastapi import FastAPI
 from strawberry.fastapi import GraphQLRouter
 from src.db.mongo_client import MongoClient
-from src.processes.minute_data import process_aggregate_data
+from src.processes.market_data import process_market_data
 from src.gql.schema import schema
 
 # ENV CONF INIT
@@ -30,7 +30,7 @@ async def startup_event():
     try:
         await MongoClient.connect_to_mongodb(
             f'mongodb://{MONGO_USER}:{MONGO_PWD}@localhost:27017/marketRoach')
-        asyncio.create_task(process_aggregate_data('SPY', 'minute', 15, 60))
+        asyncio.create_task(process_market_data('SPY', 'minute', 15, 60))
         print("Connected to the database successfully.")
     except Exception as e:
         print(f"An error occurred while connecting to the database: {e}")
