@@ -23,8 +23,8 @@ async def upsert_aggregate_logs(logs):
     aggregate_logs = MongoClient.get_collection('aggregateLogs')
     operations = []
     for item in logs:
-        query = {"time": item["time"]}
-        update = {"$set": item}
+        query = {'time': item['time']}
+        update = {'$set': item}
         operations.append(UpdateOne(query, update, upsert=True))
 
     result = await aggregate_logs.bulk_write(operations)

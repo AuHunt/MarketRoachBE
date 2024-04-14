@@ -1,8 +1,8 @@
 '''
 Module handling all aggregateLogs collection operations
-- Aggregate Logs insertion
-- Aggregate Logs retrieval
-- Mocked logs retrieval
+- Analytics data insertion
+- Analytics data retrieval
+- Mocked data retrieval
 '''
 
 import asyncio
@@ -12,31 +12,34 @@ from pymongo import UpdateOne
 from src.db.mongo_client import MongoClient
 from src.utils.interval_to_ms import interval_to_ms
 
-async def insert_aggregate_logs(logs):
-    '''Function that adds logs to aggregateLogs collection in MongoDB'''
-    aggregate_logs = MongoClient.get_collection('aggregateLogs')
-    result = await aggregate_logs.insert_many(logs)
+async def insert_analytics_data(data):
+    '''Function that adds datapoints to analytics collection in MongoDB'''
+    analytics = MongoClient.get_collection('analytics')
+    result = await analytics.insert_many(data)
     print(result)
 
-async def upsert_aggregate_logs(logs):
-    '''Function for mass-inserting/editing aggregation logs'''
-    aggregate_logs = MongoClient.get_collection('aggregateLogs')
+async def upsert_analytics_data(data):
+    '''Function for inserting/editing multiple analytics data entries'''
+    analytics = MongoClient.get_collection('analytics')
     operations = []
-    for item in logs:
-        query = {"time": item["time"]}
-        update = {"$set": item}
+    for item in data:
+        query = {
+            'time': item['time'],
+            'type': item['type']
+        }
+        update = {'$set': item}
         operations.append(UpdateOne(query, update, upsert=True))
 
-    result = await aggregate_logs.bulk_write(operations)
+    result = await analytics.bulk_write(operations)
     print(result)
 
-async def get_aggregate_logs(symbol: str, start: str, end: str, interval: str, is_mocked: bool):
+async def get_analytics(symbol: str, start: str, end: str, interval: str, is_mocked: bool):
     '''Function that retrieves aggregate data within specified range for symbol'''
     if is_mocked is True:
         await asyncio.sleep(0.5)
         return get_mocked_aggregate_logs(symbol, start, end, interval)
     else:
-        aggregate_logs = MongoClient.get_collection('aggregateLogs')
+        analytics = MongoClient.get_collection('analytics')
         skip = 0
         batch_size = 125
         logs = []
@@ -55,7 +58,7 @@ async def get_aggregate_logs(symbol: str, start: str, end: str, interval: str, i
                 { '$limit': batch_size }
             ]
 
-            cursor = aggregate_logs.aggregate(pipeline)
+            cursor = analytics.aggregate(pipeline)
             log_batch = await cursor.to_list(length=batch_size)
 
             if not log_batch:

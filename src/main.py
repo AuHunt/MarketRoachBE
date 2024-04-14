@@ -14,7 +14,7 @@ from fastapi import FastAPI
 from strawberry.fastapi import GraphQLRouter
 from src.db.mongo_client import MongoClient
 from src.processes.market_data import process_market_data
-from src.processes.price_analytics import analyze_market_data
+from src.processes.price_analytics import analyze_price_data
 from src.gql.schema import schema
 
 # ENV CONF INIT
