@@ -34,10 +34,10 @@ async def upsert_analytics_data(data):
     print(result)
 
 async def get_analytics(symbol: str, start: str, end: str, interval: str, is_mocked: bool):
-    '''Function that retrieves aggregate data within specified range for symbol'''
+    '''Function that retrieves analytics data within specified range for symbol'''
     if is_mocked is True:
         await asyncio.sleep(0.5)
-        return get_mocked_aggregate_logs(symbol, start, end, interval)
+        return get_mocked_analytics(symbol, start, end, interval)
     else:
         analytics = MongoClient.get_collection('analytics')
         skip = 0
@@ -69,7 +69,7 @@ async def get_analytics(symbol: str, start: str, end: str, interval: str, is_moc
 
         return logs
 
-def get_mocked_aggregate_logs(symbol: str, start: str, end: str, interval: str):
+def get_mocked_analytics(symbol: str, start: str, end: str, interval: str):
     '''Function that returns mock aggregate log values to avoid mongodb operations while testing'''
     now = int((datetime.now(timezone.utc)).timestamp() * 1000)
     start_ms = int(round(int(start) / 1000.0 / 60) * 60 * 1000)
