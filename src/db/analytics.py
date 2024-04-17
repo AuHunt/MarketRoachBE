@@ -86,20 +86,20 @@ def get_mocked_analytics(symbol: str, start: str, end: str, interval: str):
     for i in range(entries_num if entries_num <= 960 else 960):
         entries.append({
             'time': str(start_ms + interval_ms * i),
-            'close': round(close_price, 2),
-            'details': '',
-            'fetchTime': str(now),
-            'highest': round(highest + random.uniform(0, 1), 2),
-            'interval': interval,
-            'lowest': round(lowest - random.uniform(0, 1), 2),
-            'number': random.randint(10, 5000),
-            'open': round(open_price, 2),
-            'options': '{}',
-            'rsi14': round(random.uniform(25, 75), 2),
-            'sma5': round(close_price + random.uniform(-2, 2), 2),
-            'symbol': symbol,
-            'volume': random.randint(50000, 200000),
-            'vwap': round(close_price + random.uniform(-4, 4), 4)
+            # 'close': round(close_price, 2),
+            # 'details': '',
+            # 'fetchTime': str(now),
+            # 'highest': round(highest + random.uniform(0, 1), 2),
+            # 'interval': interval,
+            # 'lowest': round(lowest - random.uniform(0, 1), 2),
+            # 'number': random.randint(10, 5000),
+            # 'open': round(open_price, 2),
+            # 'options': '{}',
+            # 'rsi14': round(random.uniform(25, 75), 2),
+            # 'sma5': round(close_price + random.uniform(-2, 2), 2),
+            # 'symbol': symbol,
+            # 'volume': random.randint(50000, 200000),
+            # 'vwap': round(close_price + random.uniform(-4, 4), 4)
         })
 
     return entries
