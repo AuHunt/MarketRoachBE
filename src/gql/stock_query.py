@@ -6,14 +6,16 @@ import os
 from typing import List, Optional
 import strawberry
 from src.db.aggregate_logs import get_aggregate_logs
+from src.db.analytics import get_analytics
 
 IS_MOCKED = os.environ.get('IS_MOCKED', 'false')
 
 @strawberry.type
-class MarketData:
+class Datum:
     '''
     Market data return object:
         symbol - ticker symbol
+        interval - interval/timeframe for when market data was retrieved
         open - open price
         close - close price
         highest - highest price
@@ -53,20 +55,52 @@ class MarketData:
     details: str
 
 @strawberry.type
+class Analytics:
+    '''
+    Market analytics return object:
+        time - unix millisecond timestamp
+        expiration - millisecond expiration timestamp of active pattern
+        type - indicator used in pattern analysis
+        interval - interval/timeframe during which the analysis took place
+        details - details about the analytics/pattern discovered
+        symbol - ticker symbol
+    '''
+    time: str
+    expiration: str
+    type: str
+    interval: str
+    details: str
+    symbol: str
+
+@strawberry.type
 class StockQuery:
     '''
     Class defining all query operations for stock data
     '''
     @strawberry.field
-    async def get_market_data(
+    async def get_stock_data(
         self, symbol: str, start: str, end: str, interval: str
-    ) -> List[MarketData]:
+    ) -> List[Datum]:
         '''
-        Query field for market data
-        Resolver retrieves data from MongoDb query
+        Query field for stock data
+        Resolver retrieves market data from MongoDb query
         '''
         data = await get_aggregate_logs(symbol, start, end, interval, IS_MOCKED)
 
-        market_data = [MarketData(**item) for item in data]
+        stock_data = [Datum(**item) for item in data]
 
-        return market_data
+        return stock_data
+    
+    @strawberry.field
+    async def get_stock_analytics(
+        self, symbol: str, start: str, end: str, interval: str
+    ) -> List[Analytics]:
+        '''
+        Query field for stock analytics
+        Resolver retrieves analytics from MongoDb query
+        '''
+        data = await get_analytics(symbol, start, end, interval, IS_MOCKED)
+
+        analytics = [Analytics(**item) for item in data]
+
+        return analytics
