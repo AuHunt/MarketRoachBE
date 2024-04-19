@@ -85,12 +85,12 @@ class StockQuery:
         Query field for stock data
         Resolver retrieves market data from MongoDb query
         '''
-        data = await get_aggregate_logs(symbol, start, end, interval, IS_MOCKED)
+        data = await get_aggregate_logs(symbol, start, end, interval, bool(IS_MOCKED))
 
         stock_data = [Datum(**item) for item in data]
 
         return stock_data
-    
+
     @strawberry.field
     async def get_stock_analytics(
         self, symbol: str, start: str, end: str, interval: str
@@ -99,7 +99,7 @@ class StockQuery:
         Query field for stock analytics
         Resolver retrieves analytics from MongoDb query
         '''
-        data = await get_analytics(symbol, start, end, interval, IS_MOCKED)
+        data = await get_analytics(symbol, start, end, interval, bool(IS_MOCKED))
 
         analytics = [Analytics(**item) for item in data]
 

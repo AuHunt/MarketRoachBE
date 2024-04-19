@@ -79,7 +79,7 @@ def get_mocked_analytics(symbol: str, start: str, end: str, interval: str):
     analytics_types = ['RSI', 'VWAP', 'BOLL', 'MA', 'VOL', 'VI?']
 
     for i in range(entries_num if entries_num <= 960 else 960):
-        type_index = random.randint(0, len(analytics_types))
+        type_index = random.randint(0, len(analytics_types) - 1)
         analytic_entries.append({
             'time': str(start_ms + interval_ms * i),
             'expiration': str(start_ms + interval_ms * (i + 5)),
