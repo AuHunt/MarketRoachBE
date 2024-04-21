@@ -104,3 +104,17 @@ class StockQuery:
         analytics = [Analytics(**item) for item in data]
 
         return analytics
+
+    @strawberry.field
+    async def get_stock_dashboard(
+        self, symbol: str, start: str, end: str, interval: str
+    ) -> List[Analytics]:
+        '''
+        Query field for stock analytics
+        Resolver retrieves analytics from MongoDb query
+        '''
+        data = await get_analytics(symbol, start, end, interval, bool(IS_MOCKED))
+
+        analytics = [Analytics(**item) for item in data]
+
+        return analytics
