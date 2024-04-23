@@ -76,7 +76,19 @@ def get_mocked_analytics(symbol: str, start: str, end: str, interval: str):
     entries_num = (end_ms - start_ms) // interval_ms
 
     analytic_entries = []
-    analytics_types = ['RSI', 'VWAP', 'BOLL', 'MA', 'VOL', 'VI?']
+    analytics_types = [
+        'RSI_OVERSOLD'
+        'RSI_OVERBOUGHT',
+        'VWAP',
+        'BOLL_SQUEEZE'
+        'TOP_BOLL',
+        'MID_BOLL',
+        'BOTTOM_BOLL',
+        'MA',
+        'VOL_SPIKE',
+        'VOL_DEAD',
+        'VI_SQUEEZE'
+    ]
 
     for i in range(entries_num if entries_num <= 960 else 960):
         type_index = random.randint(0, len(analytics_types) - 1)
